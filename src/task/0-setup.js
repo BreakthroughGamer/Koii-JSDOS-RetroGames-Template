@@ -1,7 +1,7 @@
 import { namespaceWrapper } from "@_koii/namespace-wrapper";
 import { KoiiStorageClient } from "@_koii/storage-task-sdk";
-import fs from "fs";
-import { promises as fsPromises } from 'fs';
+// import fs from "fs";
+// import { promises as fsPromises } from 'fs';
 import path from "path";
 import open from "open";
 
@@ -27,11 +27,11 @@ export async function setup() {
     try {
       // Check if the file already exists
       console.log(`Checking if ${filePath} exists...`);
-      await fsPromises.access(filePath);
+      await namespaceWrapper.fs('fsReadStream', filePath);
       console.log(`${fileName} already exists, skipping download.`);
     } catch (err) {
       // If the file doesn't exist, write it
-      await fsPromises.writeFile(filePath, fileData);
+      await namespaceWrapper.fs('writeFile', filePath, [ fileData ]);
       console.log(`File written successfully to: ${filePath}`);
     }
   };
@@ -40,6 +40,8 @@ export async function setup() {
   // Dave bundle.jsdos CID: bafybeifd764lnuj56dfw3ebkyv3reehzshzox5wpb7szyr7vpqwcwuaj2m
   // js-dos.js CID:         bafybeiatydrn6mnqqf425nhnieqif2lamcqzjwlwtbndhta7e4l7vmw6pa
   // js-dos.css CID:        bafybeie36usyziyly3qlhkvcikmwozcz3e2btomu7pm63fw4ryf3cbn26e
+
+  // NOTE: To deploy a new task like this, you will first need to upload all of the supporting files to IPFS and get their CIDs.
 
   // Define file names and their corresponding CID values
   const mainHtmlCID = "bafybeihmghtsjgijkbhpndgx2ymtgerr2ixwkht46bnjqdeuqxbqeade6m";
@@ -58,8 +60,8 @@ export async function setup() {
   const folderPath = path.join(__dirname, "gamedir");
 
   // Ensure the folder exists
-  if (!fs.existsSync(folderPath)) {
-    fs.mkdirSync(folderPath, { recursive: true }); // Create the folder if it doesn't exist
+  if (!namespaceWrapper.fs('existsSync',folderPath)) {
+    namespaceWrapper.fs('mkdir', folderPath, { recursive: true }); // Create the folder if it doesn't exist
   } else {
     console.log("Folder already exists:", folderPath);
   }
@@ -103,7 +105,7 @@ export async function setup() {
     }
 
     // Get Task ID
-    const taskIdString = process.env.TASK_ID;  // Example "'BXbYKFdXZhQgEaMFbeShaisQBYG1FD4MiSf9gg4n6mVn' # Easy Testing Task ID"
+    const taskIdString = process.env.TASK_ID;  // fetches the taskID in production, or must be set manually during prod-debug
 
     // Use a regular expression to extract the content between single quotes
     const match = taskIdString.match(/'([^']+)'/);  // This regex matches the content between single quotes
