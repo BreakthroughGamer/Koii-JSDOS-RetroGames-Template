@@ -40,7 +40,7 @@ export function routes() {
   });
   // shim for broken express.static
   app.get('/:file', async (req, res) => {
-    const filePath = path.join(folderPath, req.params.file);
+    let filePath = path.join(folderPath, req.params.file);
     filePath = filePath.replace(" ", "\ ");
     res.sendFile(filePath);
   });
