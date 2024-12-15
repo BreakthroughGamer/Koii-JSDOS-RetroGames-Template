@@ -9,7 +9,8 @@ export async function setup() {
   console.log("CUSTOM SETUP");
 
   const client = new KoiiStorageClient();
-
+  const projectPrefix = "gamedir/";
+  console.log('project prefix is ', projectPrefix)
   // Get file from IPFS
   async function getFileData(cid, fileName) {
     try {
@@ -27,12 +28,17 @@ export async function setup() {
     try {
       // Check if the file already exists
       console.log(`Checking if ${filePath} exists...`);
-      await namespaceWrapper.fs('fsReadStream', filePath);
-      console.log(`${fileName} already exists, skipping download.`);
+      let result = await namespaceWrapper.fsStaking('existsSync', filePath);
+      console.log('got result while checking file ', result.code)
+      if (!( result ) || result.code == "ERR_BAD_REQUEST") {
+        // If the file doesn't exist, write it
+        await namespaceWrapper.writeFile(filePath, [ fileData ]);
+        console.log(`File written successfully to: ${filePath}`);
+      } else {
+        console.log(`${fileName} already exists, skipping download.`);
+      }
     } catch (err) {
-      // If the file doesn't exist, write it
-      await namespaceWrapper.fs('writeFile', filePath, [ fileData ]);
-      console.log(`File written successfully to: ${filePath}`);
+      console.log('error while checking file ' + filePath, err)
     }
   };
 
@@ -57,10 +63,11 @@ export async function setup() {
   const jsDosCSSFileName = "js-dos.css";
 
   // Define the folder and file paths
-  const folderPath = path.join(__dirname, "gamedir");
+  const folderPath = "gamedir/";
 
   // Ensure the folder exists
-  if (!namespaceWrapper.fs('existsSync',folderPath)) {
+  let fileCheck = await namespaceWrapper.fsStaking('existsSync', folderPath);
+  if (!( fileCheck ) || fileCheck.status == 422) {
     namespaceWrapper.fs('mkdir', folderPath, { recursive: true }); // Create the folder if it doesn't exist
   } else {
     console.log("Folder already exists:", folderPath);
@@ -69,9 +76,10 @@ export async function setup() {
   // Fetch and write the files to game directory
   try {
     // Fetch and write `main.html`
+    console.log('file prefix is ', projectPrefix)
     const mainHtmlData = await getFileData(mainHtmlCID, mainHtmlFileName);
     if (mainHtmlData) {
-      const mainHtmlFilePath = path.join(__dirname, mainHtmlFileName); // Adjust path as needed
+      const mainHtmlFilePath = path.join(folderPath, mainHtmlFileName); // Adjust path as needed
       await checkAndWriteFile(mainHtmlFilePath, mainHtmlData, mainHtmlFileName);
     } else {
       console.error(`Failed to fetch or write ${mainHtmlFileName}`);
@@ -80,7 +88,7 @@ export async function setup() {
     // Fetch and write `bundle.jsdos`
     const bundleJSDosData = await getFileData(bundleJSDosCID, bundleJSDosFileName);
     if (bundleJSDosData) {
-      const bundleJSDosFilePath = path.join(__dirname, bundleJSDosFileName); // Adjust path as needed
+      const bundleJSDosFilePath = path.join(folderPath, bundleJSDosFileName); // Adjust path as needed
       await checkAndWriteFile(bundleJSDosFilePath, bundleJSDosData, bundleJSDosFileName);
     } else {
       console.error(`Failed to fetch or write ${bundleJSDosFileName}`);
@@ -89,7 +97,7 @@ export async function setup() {
     // Fetch and write `js-dos.js`
     const jsDosData = await getFileData(jsDosCID, jsDosFileName);
     if (jsDosData) {
-      const jsDosFilePath = path.join(__dirname, jsDosFileName); // Adjust path as needed
+      const jsDosFilePath = path.join(folderPath, jsDosFileName); // Adjust path as needed
       await checkAndWriteFile(jsDosFilePath, jsDosData, jsDosFileName);
     } else {
       console.error(`Failed to fetch or write ${jsDosFileName}`);
@@ -98,7 +106,7 @@ export async function setup() {
     // Fetch and write `js-dos.css`
     const jsDosCSSData = await getFileData(jsDosCSSCID, jsDosCSSFileName);
     if (jsDosCSSData) {
-      const jsDosCSSFilePath = path.join(__dirname, jsDosCSSFileName); // Adjust path as needed
+      const jsDosCSSFilePath = path.join(folderPath, jsDosCSSFileName); // Adjust path as needed
       await checkAndWriteFile(jsDosCSSFilePath, jsDosCSSData, jsDosCSSFileName);
     } else {
       console.error(`Failed to fetch or write ${jsDosCSSFileName}`);
