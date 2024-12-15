@@ -1,5 +1,7 @@
 import { namespaceWrapper } from "@_koii/namespace-wrapper";
 import { KoiiStorageClient } from "@_koii/storage-task-sdk";
+import path from "path";
+import open from "open";
 
 export async function setup() {
   console.log("CUSTOM SETUP");
