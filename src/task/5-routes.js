@@ -12,9 +12,11 @@ export function routes() {
 
   
   // Define the directory and file paths
+  console.log('dirname', __dirname);
+  const folderPathBase = __dirname.split('/').slice(0, -1).join('/');
+  const folderPath = path.join(folderPathBase + "/namespace/" + process.argv[3],  "gamedir");
+  console.log('folderPath is ', folderPath)
   
-  const folderPath = path.join(__dirname + "/../namespace/" + process.argv[3],  "gamedir");
-
   app.use(express.static(folderPath));
   
   const mainHtmlFilePath = path.join(folderPath, "main.html");
@@ -25,7 +27,7 @@ export function routes() {
   app.get("/game", async (req, res) => {
     try {
       // Check if the file exists
-      await fs.access(mainHtmlFilePath);
+      await namespaceWrapper.fs('stat', mainHtmlFilePath);
 
       // Send the HTML file
       res.sendFile(mainHtmlFilePath);

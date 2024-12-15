@@ -23,21 +23,25 @@ export async function setup() {
 
   // Check if the file exists before writing it
   const checkAndWriteFile = async (filePath, fileData, fileName) => {
-    try {
       // Check if the file already exists
       console.log(`Checking if ${filePath} exists...`);
-      let result = await namespaceWrapper.fs('stat', filePath);
+      let result = await ( async () => {
+        try {
+          let result = await namespaceWrapper.fs('stat', filePath);
+          return result;
+        } catch (error) {
+          console.error(`Error checking if ${fileName} exists:`, error);
+          return error;
+        }
+      });
       console.log('got result while checking file ', result.code)
-      if (!( result ) || result.code == "ERR_BAD_REQUEST") {
+      if (result.code !== "ERR_BAD_REQUEST") {
         // If the file doesn't exist, write it
-        await namespaceWrapper.writeFile(filePath, [ fileData ]);
+        await namespaceWrapper.fs('writeFile', filePath, [ fileData ]);
         console.log(`File written successfully to: ${filePath}`);
       } else {
         console.log(`${fileName} already exists, skipping download.`);
       }
-    } catch (err) {
-      console.log('error while checking file ' + filePath, err)
-    }
   };
 
   // main.html CID:         bafybeid3s2sqyvhicyfzazbi6qjiarmwozakuvpfg2ijbl6wwwekjpuwqe
@@ -67,7 +71,7 @@ export async function setup() {
   console.log('about to check ', folderPath);
   try {
     let result = await namespaceWrapper.fs('mkdir', folderPath, { recursive: true }); // Create the folder if it doesn't exist
-    console.log(result);
+    console.log('result of creating folder is ', result);
   } catch(err) {
     console.log('err creating ' + folderPath, err)
     console.log("Folder already exists:", folderPath);
@@ -81,7 +85,8 @@ export async function setup() {
     console.log('file prefix is ', projectPrefix)
     const mainHtmlData = await getFileData(mainHtmlCID, mainHtmlFileName);
     if (mainHtmlData) {
-      const mainHtmlFilePath = path.join(folderPath, mainHtmlFileName); // Adjust path as needed
+      const mainHtmlFilePath = await path.join(folderPath, mainHtmlFileName); // Adjust path as needed
+      console.log('about to check mainHTMLFile', mainHtmlFilePath)
       await checkAndWriteFile(mainHtmlFilePath, mainHtmlData, mainHtmlFileName);
     } else {
       console.error(`Failed to fetch or write ${mainHtmlFileName}`);
@@ -90,7 +95,8 @@ export async function setup() {
     // Fetch and write `bundle.jsdos`
     const bundleJSDosData = await getFileData(bundleJSDosCID, bundleJSDosFileName);
     if (bundleJSDosData) {
-      const bundleJSDosFilePath = path.join(folderPath, bundleJSDosFileName); // Adjust path as needed
+      const bundleJSDosFilePath = await path.join(folderPath, bundleJSDosFileName); // Adjust path as needed
+      console.log('about to check bundleJSDOS', bundleJSDosFilePath)
       await checkAndWriteFile(bundleJSDosFilePath, bundleJSDosData, bundleJSDosFileName);
     } else {
       console.error(`Failed to fetch or write ${bundleJSDosFileName}`);
@@ -99,7 +105,8 @@ export async function setup() {
     // Fetch and write `js-dos.js`
     const jsDosData = await getFileData(jsDosCID, jsDosFileName);
     if (jsDosData) {
-      const jsDosFilePath = path.join(folderPath, jsDosFileName); // Adjust path as needed
+      const jsDosFilePath = await path.join(folderPath, jsDosFileName); // Adjust path as needed
+      console.log('about to check jsDosFile', jsDosFilePath)
       await checkAndWriteFile(jsDosFilePath, jsDosData, jsDosFileName);
     } else {
       console.error(`Failed to fetch or write ${jsDosFileName}`);
@@ -108,24 +115,20 @@ export async function setup() {
     // Fetch and write `js-dos.css`
     const jsDosCSSData = await getFileData(jsDosCSSCID, jsDosCSSFileName);
     if (jsDosCSSData) {
-      const jsDosCSSFilePath = path.join(folderPath, jsDosCSSFileName); // Adjust path as needed
+      const jsDosCSSFilePath = await path.join(folderPath, jsDosCSSFileName); // Adjust path as needed
+      console.log('about to check jsdosCSSFile', jsDosCSSFilePath)
       await checkAndWriteFile(jsDosCSSFilePath, jsDosCSSData, jsDosCSSFileName);
     } else {
       console.error(`Failed to fetch or write ${jsDosCSSFileName}`);
     }
 
     // Get Task ID
-    const taskIdString = process.env.TASK_ID;  // fetches the taskID in production, or must be set manually during prod-debug
+    const taskIdString = process.argv[3];  // fetches the taskID in production, or must be set manually during prod-debug
+    console.log('taskID is ', taskIdString)
 
-    // Use a regular expression to extract the content between single quotes
-    const match = taskIdString.match(/'([^']+)'/);  // This regex matches the content between single quotes
-
-    let taskid;
-    if (match) {
-      taskid = match[1];  // Extracted Task ID (content inside the quotes)
-      console.log("App found task ID of:", taskid);  // Logs the Task ID without the quotes
+    if (taskIdString !== undefined) {
       // Automatically open the desired URL in the default browser
-      open(`http://localhost:30017/task/${taskid}/game`);
+      open(`http://localhost:30017/task/${taskIdString}/game`);
     } else {
       console.log("No Task ID found in the provided string.");
     }
