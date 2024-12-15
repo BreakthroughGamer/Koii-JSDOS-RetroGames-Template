@@ -1,9 +1,5 @@
 import { namespaceWrapper } from "@_koii/namespace-wrapper";
 import { KoiiStorageClient } from "@_koii/storage-task-sdk";
-// import fs from "fs";
-// import { promises as fsPromises } from 'fs';
-import path from "path";
-import open from "open";
 
 export async function setup() {
   console.log("CUSTOM SETUP");
@@ -28,7 +24,7 @@ export async function setup() {
     try {
       // Check if the file already exists
       console.log(`Checking if ${filePath} exists...`);
-      let result = await namespaceWrapper.fsStaking('existsSync', filePath);
+      let result = await namespaceWrapper.fs('stat', filePath);
       console.log('got result while checking file ', result.code)
       if (!( result ) || result.code == "ERR_BAD_REQUEST") {
         // If the file doesn't exist, write it
@@ -66,12 +62,16 @@ export async function setup() {
   const folderPath = "gamedir/";
 
   // Ensure the folder exists
-  let fileCheck = await namespaceWrapper.fsStaking('existsSync', folderPath);
-  if (!( fileCheck ) || fileCheck.status == 422) {
-    namespaceWrapper.fs('mkdir', folderPath, { recursive: true }); // Create the folder if it doesn't exist
-  } else {
+  console.log('about to check ', folderPath);
+  try {
+    let result = await namespaceWrapper.fs('mkdir', folderPath, { recursive: true }); // Create the folder if it doesn't exist
+    console.log(result);
+  } catch(err) {
+    console.log('err creating ' + folderPath, err)
     console.log("Folder already exists:", folderPath);
   }
+
+  // process.abort();
 
   // Fetch and write the files to game directory
   try {

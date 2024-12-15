@@ -13,9 +13,9 @@ export function routes() {
   
   // Define the directory and file paths
   
-  const folderPath = path.join(__dirname + "../namespace/" + process.env.argv[3],  "gamedir");
+  const folderPath = path.join(__dirname + "/../namespace/" + process.argv[3],  "gamedir");
 
-  app.use(express.static(path.join(folderPath, "gamedir")));
+  app.use(express.static(folderPath));
   
   const mainHtmlFilePath = path.join(folderPath, "main.html");
 
