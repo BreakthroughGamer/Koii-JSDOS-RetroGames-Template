@@ -12,10 +12,11 @@ export function routes() {
 
   
   // Define the directory and file paths
-  
-  const folderPath = path.join(__dirname,  "gamedir");
+  const folderPathBase = __dirname.split('/').slice(0, -1).join('/');
+  const folderPath = path.join(folderPathBase + "/namespace/" + process.argv[3],  "gamedir");
+  console.log('folderPath is ', folderPath)
 
-  app.use(express.static(path.join(folderPath, "gamedir")));
+  app.use(express.static(folderPath));
   
   const mainHtmlFilePath = path.join(folderPath, "main.html");
 
@@ -25,8 +26,10 @@ export function routes() {
   app.get("/game", async (req, res) => {
     try {
       // Check if the file exists
-      await fs.access(mainHtmlFilePath);
-
+      let result = await (async () => {
+        return await namespaceWrapper.fs('stat', mainHtmlFilePath);
+      })
+      console.log('html file check result is ', result);
       // Send the HTML file
       res.sendFile(mainHtmlFilePath);
 
@@ -34,5 +37,11 @@ export function routes() {
       console.error("Error serving main.html:", error);
       res.status(404).send("Game HTML file not found");
     }
+  });
+  // shim for broken express.static
+  app.get('/:file', async (req, res) => {
+    let filePath = path.join(folderPath, req.params.file);
+    filePath = filePath.replace(" ", "\ ");
+    res.sendFile(filePath);
   });
 }

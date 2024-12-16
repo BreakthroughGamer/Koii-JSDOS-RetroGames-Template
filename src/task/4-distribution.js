@@ -12,6 +12,8 @@ export function distribution(submitters, bounty, roundNumber) {
    * Values are in ROE, or the KPL equivalent (1 Token = 10^9 ROE)
    *
    */
+  return true;
+
   console.log(`MAKE DISTRIBUTION LIST FOR ROUND ${roundNumber}`);
 
   // Initialize an empty object to store the final distribution list
