@@ -5,10 +5,10 @@
 
 ## Task Name ##
 # Maximum 24 characters.
-task_name: "Task Name"
+task_name: "ArK: Dangerous Dave"
 
 ## Task Author ##
-author: "Koii"
+author: "ArKoiide"
 
 # Task Description Markdown ##
 # If you specify a markdown file, the description field will be ignored.
@@ -17,11 +17,11 @@ markdownDescriptionPath: "./TaskDescription.md"
 
 ## Task Description ##
 # Ignored if you specify a markdown file.
-description: "Task description."
+description: "Testing Task for a Dangerous Dave, a DOS game from 1987."
 
 ## Repository URL ##
 # Must be public for whitelisted tasks.
-repositoryUrl: "https://github.com/koii-network/task-template"
+repositoryUrl: "https://github.com/BreakthroughGamer/Koii-JSDOS-RetroGames-Template"
 
 ## Image URL ##
 # 230x86 pixels.
