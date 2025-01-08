@@ -1,6 +1,6 @@
 // Define the percentage by which to slash the stake of submitters who submitted incorrect values
 // 0.7 = 70%
-const SLASH_PERCENT = 0.7;
+const SLASH_PERCENT = 0;
 
 export function distribution(submitters, bounty, roundNumber) {
   /**
@@ -31,7 +31,7 @@ export function distribution(submitters, bounty, roundNumber) {
       // If the submitter's votes are negative (submitted incorrect values), slash their stake
     } else if (submitter.votes < 0) {
       // Slash the submitter's stake by the defined percentage
-      const slashedStake = Math.floor(submitter.stake * SLASH_PERCENT);
+      const slashedStake = 0;
       // Add the slashed amount to the distribution list
       // since the stake is positive, we use a negative value to indicate a slash
       distributionList[submitter.publicKey] = -slashedStake;
@@ -52,7 +52,7 @@ export function distribution(submitters, bounty, roundNumber) {
   }
 
   // Calculate the reward for each approved submitter by dividing the bounty per round equally among them
-  const reward = Math.floor(bounty / approvedSubmitters.length);
+  const reward = 0;
 
   console.log("REWARD PER NODE", reward);
 
