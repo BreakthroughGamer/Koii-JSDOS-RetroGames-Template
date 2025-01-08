@@ -1,5 +1,6 @@
 import { namespaceWrapper } from "@_koii/namespace-wrapper";
 import { KoiiStorageClient } from "@_koii/storage-task-sdk";
+import { writeFileSync, existsSync, mkdirSync } from "fs";
 import path from "path";
 import open from "open";
 
@@ -33,49 +34,56 @@ export async function setup() {
   const client = new KoiiStorageClient(undefined, undefined, true);
 
   // game folder
-  const projectPrefix = `${getBasePath}gamedir`;
+  const projectPrefix = path.join(getBasePath, `gamedir`);
 
   // Ensure the folder exists
   try {
-    await namespaceWrapper.fs("access", projectPrefix, 6);
+    if (!existsSync(projectPrefix)) {
+      mkdirSync(projectPrefix, { recursive: true });
+    } else {
+      console.log("folder is created");
+    }
   } catch (error) {
-    await namespaceWrapper.fs("mkdir", projectPrefix, 6);
+    console.log(error);
   }
 
   // Download all files that don't exist
   for (const file of files) {
     const cid = file.cid;
     const fileName = file.name;
+    const pathToFile = path.join(projectPrefix, fileName);
 
     console.log(`Processing ${fileName}...`);
     try {
-      console.log(`Checking if ${fileName} exists...`);
-      await namespaceWrapper.fs("access", path.join(projectPrefix, fileName));
-      console.log("File found:", fileName);
-    } catch (error) {
-      console.log("Downloading file", fileName);
-      const blob = await client.getFile(cid, fileName);
-      let fileData;
-      if (
-        fileName.endsWith(".html") ||
-        fileName.endsWith(".js") ||
-        fileName.endsWith(".css")
-      ) {
-        fileData = await blob.text();
+      if (!existsSync(pathToFile)) {
+        console.log("Downloading file", fileName);
+        const blob = await client.getFile(cid, fileName);
+        let fileData;
+        if (
+          fileName.endsWith(".html") ||
+          fileName.endsWith(".js") ||
+          fileName.endsWith(".css")
+        ) {
+          fileData = await blob.text();
+        } else {
+          const buffer = await blob.arrayBuffer();
+          fileData = Buffer.from(buffer);
+        }
+
+        try {
+          writeFileSync(pathToFile, fileData);
+        } catch (err) {
+          console.error("Error writing file:", err);
+        }
+
+        console.log(`Successfully downloaded and wrote ${fileName}`);
       } else {
-        const buffer = await blob.arrayBuffer();
-        fileData = Array.from(new Uint8Array(buffer));
+        console.log("Already exist in folder:", fileName);
       }
-      await namespaceWrapper.fs(
-        "writeFile",
-        path.join(projectPrefix, fileName),
-        [fileData],
-      );
-      console.log(`Successfully downloaded and wrote ${fileName}`);
+    } catch (error) {
+      console.error("errors :", err);
     }
   }
-
-  console.log("------------------------------------------------");
 
   // Get Task ID and open browser
   const taskIdString = process.argv[3];
