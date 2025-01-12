@@ -1,66 +1,92 @@
-// Define the percentage by which to slash the stake of submitters who submitted incorrect values
-// 0.7 = 70%
-const SLASH_PERCENT = 0;
+const SLASH_PERCENT = 0; // 70% slash for incorrect submissions
+const MIN_SCORE_FOR_REWARD = 20; // Minimum score required to receive a reward
 
 export function distribution(submitters, bounty, roundNumber) {
-  /**
-   * Generate the reward list for a given round
-   * This function should return an object with the public keys of the submitters as keys
-   * and the reward amount as values
-   *
-   * IMPORTANT: If the slashedStake or reward is not an integer, the distribution list will be rejected
-   * Values are in ROE, or the KPL equivalent (1 Token = 10^9 ROE)
-   *
-   */
-  return true;
-
   console.log(`MAKE DISTRIBUTION LIST FOR ROUND ${roundNumber}`);
+  console.log('Total bounty for distribution:', bounty);
 
-  // Initialize an empty object to store the final distribution list
+  // Initialize the distribution list
   const distributionList = {};
+  
+  // Handle invalid submissions first - apply slashing
+  submitters.filter(s => s.votes < 0).forEach(submitter => {
+    const slashedStake = Math.floor(submitter.stake * SLASH_PERCENT);
+    distributionList[submitter.publicKey] = -slashedStake; // Negative value indicates slashing
+    console.log("SLASHED STAKE:", submitter.publicKey, slashedStake);
+  });
 
-  // Initialize an empty array to store the public keys of submitters with correct values
-  const approvedSubmitters = [];
-
-  // Iterate through the list of submitters and handle each one
-  for (const submitter of submitters) {
-    // If the submitter's votes are 0, they do not get any reward
-    if (submitter.votes === 0) {
-      distributionList[submitter.publicKey] = 0;
-
-      // If the submitter's votes are negative (submitted incorrect values), slash their stake
-    } else if (submitter.votes < 0) {
-      // Slash the submitter's stake by the defined percentage
-      const slashedStake = 0;
-      // Add the slashed amount to the distribution list
-      // since the stake is positive, we use a negative value to indicate a slash
-      distributionList[submitter.publicKey] = -slashedStake;
-
-      // Log that the submitter's stake has been slashed
-      console.log("CANDIDATE STAKE SLASHED", submitter.publicKey, slashedStake);
-
-      // If the submitter's votes are positive, add their public key to the approved submitters list
-    } else {
-      approvedSubmitters.push(submitter.publicKey);
+  // Get all valid submitters (excluding null submissions which were accepted)
+  const validSubmitters = submitters.filter(s => {
+    try {
+      if (s.votes <= 0) return false;
+      const submission = JSON.parse(s.submission);
+      return submission && submission.score > 0;
+    } catch {
+      return false;
     }
-  }
-
-  // If no submitters submitted correct values, return the current distribution list
-  if (approvedSubmitters.length === 0) {
-    console.log("NO NODES TO REWARD");
+  });
+  
+  // If no valid submitters with scores, return just the slashing results
+  if (validSubmitters.length === 0) {
+    console.log("NO VALID SUBMISSIONS WITH SCORES TO REWARD");
     return distributionList;
   }
 
-  // Calculate the reward for each approved submitter by dividing the bounty per round equally among them
-  const reward = 0;
+  // Calculate scores for valid submitters
+  const submitterScores = validSubmitters.map(submitter => {
+    try {
+      const submission = JSON.parse(submitter.submission);
+      return {
+        publicKey: submitter.publicKey,
+        score: Number(submission.score)
+      };
+    } catch (error) {
+      console.error("Error parsing submission:", error);
+      return null;
+    }
+  }).filter(s => s !== null);
 
-  console.log("REWARD PER NODE", reward);
+  // Filter out submissions below minimum score
+  const qualifiedSubmitters = submitterScores.filter(s => s.score >= MIN_SCORE_FOR_REWARD);
+  
+  if (qualifiedSubmitters.length === 0) {
+    console.log("NO QUALIFIED SUBMISSIONS ABOVE MINIMUM SCORE");
+    return distributionList;
+  }
 
-  // Assign the calculated reward to each approved submitter
-  approvedSubmitters.forEach((candidate) => {
-    distributionList[candidate] = reward;
+  // Calculate total score of qualified submitters
+  const totalScore = qualifiedSubmitters.reduce((sum, s) => sum + s.score, 0);
+
+  // Distribute rewards proportionally to scores
+  qualifiedSubmitters.forEach(submitter => {
+    try {
+      // Calculate reward proportional to score
+      const reward = totalScore > 0 
+        ? Math.floor((submitter.score / totalScore) * bounty)
+        : Math.floor(bounty / qualifiedSubmitters.length);
+      
+      distributionList[submitter.publicKey] = reward;
+      console.log("REWARD:", submitter.publicKey, reward, "Score:", submitter.score);
+    } catch (error) {
+      console.error("Error calculating reward:", error);
+      distributionList[submitter.publicKey] = 0;
+    }
   });
 
-  // Return the final distribution list
+  // Verify total distribution doesn't exceed bounty
+  const totalDistributed = Object.values(distributionList)
+    .filter(v => v > 0)
+    .reduce((sum, v) => sum + v, 0);
+    
+  if (totalDistributed > bounty) {
+    console.warn("Distribution exceeded bounty, adjusting rewards");
+    const adjustment = bounty / totalDistributed;
+    Object.keys(distributionList).forEach(key => {
+      if (distributionList[key] > 0) {
+        distributionList[key] = Math.floor(distributionList[key] * adjustment);
+      }
+    });
+  }
+
   return distributionList;
 }

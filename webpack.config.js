@@ -37,7 +37,7 @@ export default {
     rules: [{ test: /\.html$/, use: ["html-loader"] }],
   },
   output: {
-    filename: "main.js",
+    filename: "bafybeih3wu3drl7mbeuvgk3jmrtgvhkg2ibcbcql6svb5sem2xdrxsuu3u.js",
     path: path.resolve(__dirname, "dist"),
   },
 };

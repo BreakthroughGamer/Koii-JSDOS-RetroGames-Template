@@ -1,9 +1,54 @@
-import { namespaceWrapper, app } from "@_koii/namespace-wrapper";
+import { namespaceWrapper, app, TASK_ID } from "@_koii/namespace-wrapper";
 import path from "path";
-import express from "express";
 
 export function routes() {
   const gameDirPath = "gamedir";
+
+  // API Routes - Define these BEFORE the static file handler
+  app.post(`/init-game`, async (req, res) => {
+    try {
+      await namespaceWrapper.storeSet("gameState", "waiting");
+      await namespaceWrapper.storeSet("currentGameScore", 0);
+      await namespaceWrapper.storeSet("lastScoreUpdate", Date.now());
+      console.log("Game initialized successfully");
+      res.status(200).send("Game initialized");
+    } catch (error) {
+      console.error("Error initializing game:", error);
+      res.status(500).send("Error initializing game");
+    }
+  });
+
+  app.post(`/submit-score`, async (req, res) => {
+    try {
+      console.log("Received score submission:", req.body);
+      const { score, timestamp, gameState } = req.body;
+      
+      // Validate score
+      if (typeof score !== 'number' || score <= 0) {
+        console.log("Invalid score received:", score);
+        return res.status(400).send("Invalid score");
+      }
+
+      // Validate timestamp
+      const currentTime = Date.now();
+      const maxTimeOffset = 5 * 60 * 1000; // 5 minutes
+      if (Math.abs(currentTime - timestamp) > maxTimeOffset) {
+        console.log("Invalid timestamp:", timestamp);
+        return res.status(400).send("Invalid timestamp");
+      }
+
+      // Store game state and score
+      await namespaceWrapper.storeSet("gameState", gameState);
+      await namespaceWrapper.storeSet("currentGameScore", score);
+      await namespaceWrapper.storeSet("lastScoreUpdate", timestamp);
+      
+      console.log(`Score submitted: ${score}, Game State: ${gameState}`);
+      res.status(200).send("Score submitted successfully");
+    } catch (error) {
+      console.error("Error submitting score:", error);
+      res.status(500).send("Error submitting score");
+    }
+  });
 
   // Serve all static files
   app.get('/*', async (req, res) => {
