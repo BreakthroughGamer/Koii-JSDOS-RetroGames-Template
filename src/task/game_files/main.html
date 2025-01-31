@@ -105,6 +105,40 @@
           },
         });
       };
+
+      function getTextFromCanvas() {
+        const canvas = document.querySelector("canvas");
+        // Ensure the canvas exists
+        if (canvas) {
+          // Get the 2D drawing context
+          const ctx = canvas.getContext("2d");
+
+          console.log(ctx);
+
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+          console.log(imageData);
+
+          const data = imageData.data;
+
+          let text = "";
+
+          for (let i = 0; i < data.length; i += 4) {
+            text += String.fromCharCode(data[i]);
+          }
+          console.log(text);
+        }
+        // const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        // const data = imageData.data;
+        // let text = "";
+
+        return "text";
+      }
+
+      setInterval(() => {
+        const text = getTextFromCanvas();
+        console.log(text);
+      }, 1000);
     </script>
   </body>
 </html>
